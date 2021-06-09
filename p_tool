@@ -1,0 +1,204 @@
+#!/bin/bash
+
+#Script for practical automated usage 
+#Author: Junior Egbuna
+#Use at own risk. Although every effort has been made to ensure the sript is error free, there may be a few issues on certain systems and a recode may be needed to get the script working as expected.
+clear
+#This Script has been mainly tested on CentOS and RedHat Distributions.
+#Please send update suggestions to junior@ptools.co.uk or take part in the development at https://github.com/junior/p_tool-practical-tool
+
+echo -e "$(tput setaf 4)# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## #"
+echo -e "$(tput setaf 4)#                     $(tput setaf 2)Practical Tool$(tput sgr 0)                       $(tput setaf 4)#"
+echo -e "$(tput setaf 4)#                         $(tput setaf 2)v1.01$(tput sgr 0)                            $(tput setaf 4)#"
+echo -e "$(tput setaf 4)#   $(tput setaf 2)https://github.com/Junior-ptool/p_tool-practical-tool  $(tput setaf 4)#"
+echo -e "$(tput setaf 4)# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## #$(tput sgr 0)"
+
+#Create directory for use by ptool
+function exist_mkdir () {
+ls /etc/ptool
+}
+echo
+echo
+echo
+if "exist_mkdir" ; then
+	echo "Directory already exist. Moving on with selection.."
+else
+	sudo mkdir /etc/ptool
+fi
+echo
+echo
+echo
+echo "What would you like to do with Practical Tool?"
+echo 
+echo 
+echo "Create User. Manage Permissions: [a]"
+echo
+echo "Basic Server Set-Up: [s] "
+echo
+echo "Partition And RAID Storage Devices: [p] "
+echo
+echo "Update Services And Packages:  [u] "
+echo
+echo "Configure swap, swappiness and max kernel max message:  [m]"
+echo
+echo "Exit:  [x]"
+echo 
+echo "Please select a letter corresponding to your selection:   "
+echo "$(tput setaf 3)[s]$(tput sgr 0) : Initial Server Set Up. Very Basic.  "
+echo "$(tput setaf 3)[p]$(tput sgr 0) : Partition or Fallocate Drives & Create RAID.  "
+echo "$(tput setaf 3)[a]$(tput sgr 0) : Add New User. Manage Permissions & Umask.  "
+echo "$(tput setaf 3)[u]$(tput sgr 0) : Update Server.  "
+echo "$(tput setaf 3)[m]$(tput sgr 0) : Create & Configure Swap, Swappiness & Kernel Message.  "
+echo "$(tput setaf 3)[x]$(tput sgr 0) : Exit This Script.  "
+echo
+read action
+
+#Menu Options
+while true ; do
+	case $action in	
+		u) echo "Server Updating. Please Wait...";;
+		p) echo "Initizializing Partitioning and RAID Script. Please Wait...";;
+		s) echo "Initializing A Basic Initial Server Setup And Configuration";;
+		m) echo "Configuring Swap Parameters...";;
+		a) echo "Create New User/s & Update permissions and umask..";;
+		x) echo "Now Exiting....."
+	esac
+
+#System Update
+	if [[ $action == u ]] ; then
+		sudo dnf -y update || apt -y update
+
+#Pull Partition scipt and run		
+	elif [[ $action == p ]] ; then
+		cd /etc/ptools
+		wget https://port443.uk/ptools
+		sudo chmod 700 ptools
+		sudo bash ptools
+
+#Set Up Servers		
+	elif [[ $action == s ]] ; then
+		echo "Would you like to generate a ssh keypair and scan your additional nodes to collect their keys?  "
+		read -p "[Y] or [N]:  " quest
+		if [[ $quest == Y ]] || [[ $quest == y ]] ; then
+			echo "What is the host IP?  "
+			read host
+			sudo mkdir ~/.ssh
+			sudo mkdir ~/.ssh/known_hosts
+			sudo chmod 600 ~/.ssh/known_hosts
+#Copy keys from host
+			sudo ssh-keyscan $host ~/.ssh/known_hosts
+			sudo ssh-keygen -t rsa 
+			sudo ssh-copy-id $host
+			
+		fi
+
+#SSH Hardening
+		echo "Would you like to reduce Brute Force Noise and change your SSH Port?  "
+		read -p "[Y] or [No]:  " p_num
+
+		if [[ $p_num == Y ]] || [[ $p_num == y ]] ; then
+			echo Port $p_num >> /etc/ssh/sshd_config
+			if [[ $? -eq 0 ]]; then
+				sudo systemctl restart sshd
+				echo "SSH Port now updated. Please open a new shell and test it before closing this one."
+			else
+				echo "There has been an permission issue hardening your SSH. Are you root or a sudoer?  "
+			fi
+
+#Setting Hostname And Timezone
+		echo 
+		echo "What is the hostname for the server? "
+		read hostname
+		hostnamectl set-hostname $hostname
+		echo 
+		echo "What is your time zone? e.g Europe/London"
+		read time
+		timedatectl set-time $time
+		fi
+		break
+
+#Optimise Server with swappiness and overcommit
+	elif [[ $action == m ]] ; then
+		echo 
+		echo "What swappiness would you like to apply \(Max 100\)?  "
+		read swap_level
+		sysctl vm.swappiness=$swap_level
+		echo 
+		echo "Would you like to overcommit memory?  "
+		read -p "[Y] or [N]" oc
+
+		if [[ $oc == Y ]] || [[ $oc == y ]] ; then
+			echo 1 > /proc/sys/vm/overcommit_memory
+		fi
+
+		echo "What would you like to set msgmax to? \(Max: 131072\) "
+		read
+		echo $REPLY > /proc/sys/kernel/msgmax
+		echo
+		echo "Would you like to create swap?  "
+		read -p "[Y] [N]" fal_swap
+
+#Create swap if wanted.
+		if [[ $fal_swap == Y ]] || [[ $fal_swap == y ]] ; then
+			echo
+			echo "What size would you like your swap to be in MB or GB?  "
+			echo
+			read swap_size
+			echo
+			echo "Creating swap"
+			echo
+			swap.disk=/etc/ptools/swap.disk
+			fallocate -l $swap_size $swap.disk
+			mkswap $swap.disk
+			swapon $swap.disk
+			swapon -s
+			echo
+			echo "Swap Successfully Created.  "
+			echo
+		else
+			echo
+			echo "No Swap Will Be Added"
+			echo
+		fi
+
+		break
+
+#Add User ANd Password
+	elif [[ $action == a ]] ; then
+		add=$(egrep "^$user" /etc/passwd)
+
+		while [[ $add -eq 1 ]] ; do
+			echo
+			echo "What is the name of the user you would like to add?  "
+			echo
+			read user
+			grep -e "^$user" /etc/passwd > /dev/null
+
+			#Check if user exist
+			if [[ $? -eq 0 ]]; then
+				echo "Username $user Already Exists! Please try again.  "
+			fi
+
+		done
+
+
+		echo
+		echo "Please enter the new users password.  "
+		echo
+		read -s -p "Enter Password:   " password
+		pass=$(perl -e 'print crypt($ARGV[0], "password")' $password)
+		useradd -m -p "$pass" "$user"
+
+		if [[ $? -eq 0 ]] ; then
+			echo "User $user Has Been Successfully Added.  "
+		else
+			echo "Failed To Add User.  "
+		fi
+
+#Exit Script
+	else
+		if [[ $action == x ]] ; then
+			exit 0
+		fi
+	fi
+done 
