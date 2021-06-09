@@ -9,6 +9,13 @@
 #Refresh screen
 clear
 
+
+cd /etc/ptool
+cat /etc/ptool/p_tool > /dev/null
+if [[ $? -eq 1 ]] ; then
+	wget https://raw.githubusercontent.com/Junior-ptool/p_tool-practical-tool/master/p_tool
+fi
+
 function vd () {
 	ls /dev | grep vd*
 }
@@ -186,3 +193,5 @@ else
 	exit 1
 fi
 fi
+
+bash p_tool
