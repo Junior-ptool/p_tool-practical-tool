@@ -17,11 +17,11 @@ if [[ $? -eq 1 ]] ; then
 fi
 
 function vd () {
-	ls /dev | grep vd*
+	ls /dev/vda
 }
 
 function sd () {
-	ls /dev | grep sd*
+	ls /dev/sda
 }
 
 
@@ -36,7 +36,7 @@ elif vd ; then
 	clear
 	echo "This Is A Virtualized System"
 else
-	echo "The drive type is not recognised by this script. Exiting..."
+	echo "Your system type is not recognised by this script. Exiting..."
 	exit 1
 fi
 
@@ -118,7 +118,7 @@ fi
 	
 		echo ""
 		read -p "Y or N?   "
-			if [ $REPLY == Y ] || [ $REPLY == y] ; then
+			if [ $REPLY == Y ] || [ $REPLY == y ] ; then
 				while true ; do  
 				read -p "How many devices would you like to use for RAID?:   " raid_devices
 				read -p "What RAID level would you like?:  " raid_level

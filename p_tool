@@ -47,12 +47,12 @@ echo "Please select a letter corresponding to your selection:   "
 echo 
 echo "$(tput setaf 3)[s] : Initial Server Set Up. Very Basic.$(tput sgr 0)  "
 echo "$(tput setaf 3)[p] : Partition or Fallocate Drives & Create RAID.$(tput sgr 0)  "
-echo "$(tput setaf 3)[a] : Add New User. Manage Permissions & Umask.$(tput sgr 0)  "
+echo "$(tput setaf 3)[a] : Add New User. Manage Permissions.$(tput sgr 0)  "
 echo "$(tput setaf 3)[u] : Update Server.$(tput sgr 0)  "
 echo "$(tput setaf 3)[m] : Create & Configure Swap, Swappiness & Kernel Message.$(tput sgr 0)  "
 echo "$(tput setaf 3)[x] : Exit This Script.$(tput sgr 0)  "
 echo
-read -p "Enter Selection:   " action
+read -p "$(tput setaf 5)Enter Selection:$(tput sgr 0)   " action
 
 #Menu Options
 while [[ true != false ]] ; do
@@ -61,7 +61,7 @@ while [[ true != false ]] ; do
 		p) echo "Initizializing Partitioning and RAID Script. Please Wait...";;
 		s) echo "Initializing A Basic Initial Server Setup And Configuration";;
 		m) echo "Configuring Swap Parameters...";;
-		a) echo "Create New User/s & Update permissions and umask..";;
+		a) echo "Create New User/s & Update permissions..";;
 		x) echo "Now Exiting....."
 	esac
 
@@ -216,43 +216,221 @@ declare -xf flag
 
 		break
 
-#Add User And Password
+#Add User And Password; Manage Permissions
 	elif [[ $action == a ]] ; then
-		function add () {
-		sudo grep -e "^$user" /etc/passwd
-		}
-		while true ; do
+		while [[ 0 != 1 ]] ; do
 			echo
-			echo "What is the name of the user you would like to add?  "
+			echo "What would you like to do with this tool?  "
 			echo
-			read -p "Username:   "user
-			"add" > /dev/null
+			echo "[1]: Add New User:  "
+			echo "[2]: Manage Permissions:  "
+			echo
+			read -p "Chosen Option:   " job
+			case $job in
+				1) echo "Add New System User:   ";;
+				2) echo "Edit Generic Permissions (rwx):   ";;
+			esac
+			function add () {
+			sudo grep -e "^$user" /etc/passwd
+			}
+			if [[ $job == 1 ]] ; then
+				while true ; do
+					echo
+					echo "What is the name of the user you would like to add?  "
+					echo
+					read -p "Username:   " user
+					"add" > /dev/null
 
-			#Check if user exist
-			if add ; then
-				echo "Username $user Already Exists! Please try again.  "
-			else
+					#Check if user exist
+					if add ; then
+						echo "Username $user Already Exists! Please try again.  "
+					else
 
+						echo
+						echo "Please enter the new users password.  "
+						echo
+						read -s -p "Enter Password:   " password
+						pass=$(perl -e 'print crypt($ARGV[0], "password")' $password)
+						sudo useradd -m -p "$pass" "$user"
+
+						if [[ $? -eq 0 ]] ; then
+							echo "User $user Has Been Successfully Added.  "
+							break
+						else
+							echo "Failed To Add User.  "
+						fi
+					fi
+				break
+				done
+			elif [[ $job == 2 ]] ; then
 				echo
-				echo "Please enter the new users password.  "
+				echo "What is the absolute path of the file you would like to edit the permission for?  "
 				echo
-				read -s -p "Enter Password:   " password
-				pass=$(perl -e 'print crypt($ARGV[0], "password")' $password)
-				sudo useradd -m -p "$pass" "$user"
-
-				if [[ $? -eq 0 ]] ; then
-					echo "User $user Has Been Successfully Added.  "
+				read -p "path/to/file:  " f_path
+				echo
+				function path () {
+				sudo getfacl "$f_path"
+				}
+				echo "The Permission For This File/Directory currently looks likes:  "
+				path
+				echo
+				echo "Who's Permissions Would You Like To Edit Or Use A Preset Config?  "
+				echo
+				echo "$(tput setaf 3)[U]: User$(tput sgr 0)   "
+				echo "$(tput setaf 3)[G]: Group$(tput sgr 0)   "
+				echo "$(tput setaf 3)[O]: Other$(tput sgr 0)   "
+				echo "$(tput setaf 5)[700]: rwx------$(tput sgr 0)   "
+				echo "$(tput setaf 5)[600]: rw-------$(tput sgr 0)   "
+				echo "$(tput setaf 5)[644]: rw-r--r--$(tput sgr 0)   " 
+				echo
+				while true ; do
+					read -p "Enter Option:  " perm
+					case $perm in
+						U) echo "Edit Owners Permission. Which Permission would you like to add or remove?  ";;
+						u) echo "Edit Owners Permission. Which Permission would you like to add or remove?  ";;
+						G) echo "Edit Group Permission. Which permission would you like to add or remove?  ";;
+						g) echo "Edit Group Permission. Which permission would you like to add or remove?  ";;
+						O) echo "Edit Others Permission. Which permission would you like to add or remove?  ";;
+						o) echo "Edit Others Permission. Which permission would you like to add or remove?  ";;
+						700) echo "Applying Changes...  ";;
+						600) echo "Applying Changes...  ";;
+						644) echo "Applying Changes...  ";;
+					esac
+					if [[ $perm == U ]] || [[ $perm == u ]] ; then
+						echo
+						echo "[1]: Add Read "
+						echo "[2]: Add Write "
+						echo "[3]: Add Execute "
+						echo "[4]: Remove Read "
+                                                echo "[5]: Remove Write "
+                                                echo "[6]: Remove Execute "
+						echo
+						read -p "Selected Num:  " num
+						case $num in
+							1) echo "Adding Read Permission For Owner.  ";;
+							2) echo "Adding Write Permission For Owner.  ";;
+							3) echo "Adding Execute Permission For Owner.  ";;
+							4) echo "Removing Read Permission For Owner.  ";;
+                                                        5) echo "Removing Write Permission For Owner.  ";;
+                                                        6) echo "Removing Execute Permission For Owner.  ";;
+						esac
+						if [[ $num == 1 ]] ; then
+							sudo chmod u+r $f_path
+							getfacl $f_path
+						elif [[ $num == 2 ]] ; then 
+							sudo chmod u+w $f_path
+							getfacl $f_path
+						elif [[ $num == 3 ]] ; then
+							sudo chmod u+x $f_path
+							getfacl $f_path
+						elif [[ $num == 4 ]] ; then
+                                                        sudo chmod u-r $f_path
+							getfacl $f_path
+                                                elif [[ $num == 5 ]] ; then
+                                                        sudo chmod u-w $f_path
+							getfacl $f_path
+                                                elif [[ $num == 6 ]] ; then
+                                                        sudo chmod u-x $f_path
+							getfacl $f_path
+						fi
+						break
+					elif [[ $perm == G ]] || [[ $perm == g ]] ; then
+						echo
+                                                echo "[1]: Add Read "
+                                                echo "[2]: Add Write "
+                                                echo "[3]: Add Execute "
+                                                echo "[4]: Remove Read "
+                                                echo "[5]: Remove Write "
+                                                echo "[6]: Remove Execute "
+                                                echo
+                                                read -p "Selected Num:  " num
+                                                case $num in
+                                                        1) echo "Adding Read Permission For Group.  ";;
+                                                        2) echo "Adding Write Permission For Group.  ";;
+                                                        3) echo "Adding Execute Permission For Group.  ";;
+                                                        4) echo "Removing Read Permission For Group.  ";;
+                                                        5) echo "Removing Write Permission For Group.  ";;
+                                                        6) echo "Removing Execute Permission For Group.  ";;
+                                                esac
+                                                if [[ $num == 1 ]] ; then
+                                                        sudo chmod g+r $f_path
+							getfacl $f_path
+                                                elif [[ $num == 2 ]] ; then
+                                                        sudo chmod g+w $f_path
+							getfacl $f_path
+                                                elif [[ $num == 3 ]] ; then
+                                                        sudo chmod g+x $f_path
+							getfacl $f_path
+                                                elif [[ $num == 4 ]] ; then
+                                                        sudo chmod g-r $f_path
+							getfacl $f_path
+                                                elif [[ $num == 5 ]] ; then
+                                                        sudo chmod g-w $f_path
+							getfacl $f_path
+                                                elif [[ $num == 6 ]] ; then
+                                                        sudo chmod g-x $f_path
+							getfacl $f_path
+						fi
+						break
+					elif [[ $perm == O ]] || [[ $perm == o ]] ; then
+                                                echo
+                                                echo "[1]: Add Read "
+                                                echo "[2]: Add Write "
+                                                echo "[3]: Add Execute "
+                                                echo "[4]: Remove Read "
+                                                echo "[5]: Remove Write "
+                                                echo "[6]: Remove Execute "
+                                                echo
+                                                read -p "Selected Num:  " num
+                                                case $num in
+                                                        1) echo "Adding Read Permission For Others.  ";;
+                                                        2) echo "Adding Write Permission For Others.  ";;
+                                                        3) echo "Adding Execute Permission For Others.  ";;
+                                                        4) echo "Removing Read Permission For Others.  ";;
+                                                        5) echo "Removing Write Permission For Others.  ";;
+                                                        6) echo "Removing Execute Permission For Others.  ";;
+                                                esac
+                                                if [[ $num == 1 ]] ; then
+                                                        sudo chmod o+r $f_path
+							getfacl $f_path
+                                                elif [[ $num == 2 ]] ; then
+                                                        sudo chmod o+w $f_path
+							getfacl $f_path
+                                                elif [[ $num == 3 ]] ; then
+                                                        sudo chmod o+x $f_path
+							getfacl $f_path
+                                                elif [[ $num == 4 ]] ; then
+                                                        sudo chmod o-r $f_path
+							getfacl $f_path
+                                                elif [[ $num == 5 ]] ; then
+                                                        sudo chmod o-w $f_path
+							getfacl $f_path
+                                                elif [[ $num == 6 ]] ; then
+                                                        sudo chmod o-x $f_path
+							getfacl $f_path
+                                                fi
+						break
+					elif [[ $perm -eq 700 ]] ; then
+						sudo chmod 700 $f_path
+						getfacl $f_path
+					elif [[ $perm -eq 600 ]] ; then
+						sudo chmod 600 $f_path
+						getfacl $f_path
+					else 
+						sudo chmod 644 $f_path
+						getfacl $f_path
+					fi
 					break
-				else
-					echo "Failed To Add User.  "
-				fi
-			fi
+				done
+				break
+			fi					
 		done
+		break			
 
 #Exit Script
 	elif [[ $action == x ]] ; then
-		break
 		exit 1
 		
 	fi
+	break
 done 
