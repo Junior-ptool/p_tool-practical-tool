@@ -83,6 +83,24 @@ while [[ true != false ]] ; do
 		elif [[ $i -eq 2 ]] ; then
 			sudo apt -y update
 		fi
+		echo
+		echo "Update Complete.  "
+		echo "Would You Like To Exit The Script [X] Or Return To Main Menu [M]?  "
+		echo
+		echo
+		echo "[M]:  Exit To Main Menu  "
+		echo "[X]: Exit Script..  "
+		echo
+		read -p "Enter Option:   "
+		case $REPLY in
+			M) echo "Exiting To Main Menu... ";;
+			X) echo "Exiting Script... ";;
+		esac
+		if [[ $REPLY == M ]] || [[ $REPLY == m ]] ; then
+			sudo bash p_tool
+		else
+			exit 0
+		fi
 		break
 
 #Pull Partition scipt and run		
@@ -152,9 +170,28 @@ while [[ true != false ]] ; do
 			echo "What is your time zone? e.g Europe/London"
 			read -p "Correct Syntax Needed:   " time
 			sudo timedatectl set-timezone $time
+			echo
+			echo "Server Setup Now Complete.  "
+			echo
+			echo "Would You Like To Exit The Script: [X]  "
+			echo "Or Go Back To The Main Menu?  [M]  "
+			echo
+			read -p "Enter Option:  "
+				case $REPLY in
+					X) echo "Exiting This Script...  ";;
+					M) echo "Returning To Main Menu...  ";;
+				esac
+			if [[ $REPLY == X ]] || [[ $REPLY == x ]] ; then
+				exit 0
+				break
+			else
+				sudo bash p_tool
+			fi
 			
 		else
 			echo "SSH Hardening And Basic Set Up has not taken place.  "
+			echo "Returning To Main Menu"
+			sudo bash p_tool
 		fi
 		break
 
@@ -164,58 +201,127 @@ swapon -s
 declare -xf flag
 #Optimise Server with swappiness and overcommit
 	elif [[ $action == m ]] ; then
-		echo 
-		echo "What swappiness would you like to apply \(Max 100\)?  "
-		read -p "Enter Figure:   " swap_level
-		sudo sysctl vm.swappiness=$swap_level
-		echo 
-		echo "Would you like to overcommit memory?  "
-		read -p "[Y] or [N]:  " oc
-
-		if [[ $oc == Y ]] || [[ $oc == y ]] ; then
-			echo 1 > /proc/sys/vm/overcommit_memory
-		fi
-
-		echo "What would you like to set msgmax to? \(Max: 131072\) "
-		read -p "Enter Figure:   "
-		sudo echo $REPLY > /proc/sys/kernel/msgmax
 		echo
-		echo "Would you like to create swap?  "
-		read -p "[Y] [N]:  " fal_swap
-		function flag2 () {
-		swapon $swap
-		}
-		declare -xf flag2
+		echo "Welcome To The Memory Optimization Tool. "
+		echo
+		echo "What Memory Options Would You Like To Configure Or View From Here?  "
+		echo
+		echo "[S]: Configure Swappiness.  "
+		echo "[O]: Overcommit System Memory.  "
+		echo "[M]: Configure Memore Max Msg.  "
+		echo "[P]: Configure System Swap.  "
+		echo "[T]: View Slab or Live Memory Usage.  "
+		echo 
+		read -p "Select Option:  "
+		echo
+		case $REPLY in
+			S) echo "Configuring Swappiness......   ";;
+			O) echo "Overcommit.  ";;
+			M) echo "Maxmsg Config.  ";;
+			P) echo "Configure Swap.  ";;
+			T) echo "View Memory Stats...  ";;
+		esac
+		if [[ $REPLY == S ]] || [[ $REPLY == s ]] ; then
+			echo "What swappiness would you like to apply (Max 100)?  "
+			read -p "Enter Figure:   " swap_level
+			sudo sysctl vm.swappiness=$swap_level
+			echo "Configuration Complete...  "
+			echo
+		elif [[ $REPLY == O ]] || [[ $REPLY == o ]] ; then
+			echo "Would you like to overcommit memory?  "
+			read -p "[Y] or [N]:  " oc
 
-#Create swap if wanted.
-		if [[ $fal_swap == Y ]] || [[ $fal_swap == y ]] ; then
+			if [[ $oc == Y ]] || [[ $oc == y ]] ; then
+				echo 1 > /proc/sys/vm/overcommit_memory
+			fi
+			echo "Configuration Complete...  "
+		elif [[ $REPLY == M ]] || [[ $REPLY == m ]] ; then
+			echo "What would you like to set msgmax to? (Max: 131072) "
+			read -p "Enter Figure:   "
+			sudo echo $REPLY > /proc/sys/kernel/msgmax
+			echo "Configuration Complete... "
+			sudo bash p_tool
+		elif [[ $REPLY == P ]] || [[ $REPLY == p ]] ; then
 			echo
-			echo "What size would you like your swap to be in MB or GB?  "
-			echo
-			read -p "Enter Figure:  " swap_size
-			echo
-			echo "Creating swap"
-			echo
-			swap=/etc/ptool/swap.disk
-			sudo fallocate -l $swap_size $swap
-			sudo chmod 600 $swap
-			sudo mkswap $swap
-			su -c flag2 
-			su -c flag 
-			echo
-			free -h
-			echo "Swap Successfully Created.  "
-			echo
-			echo "$swap	none	ext4	swap	defaults	0	0" >> /etc/fstab
+			echo "Would you like to create swap?  "
+			read -p "[Y] [N]:  " fal_swap
+			function flag2 () {
+			swapon $swap
+			}
+			declare -xf flag2
+
+	#Create swap if wanted.
+			if [[ $fal_swap == Y ]] || [[ $fal_swap == y ]] ; then
+				echo
+				echo "What size would you like your swap to be in MB or GB?  "
+				echo
+				read -p "Enter Figure:  " swap_size
+				echo
+				echo "Creating swap"
+				echo
+				swap=/etc/ptool/swap.disk
+				sudo fallocate -l $swap_size $swap
+				sudo chmod 600 $swap
+				sudo mkswap $swap
+				su -c flag2 
+				su -c flag 
+				echo
+				free -h
+				echo "Swap Successfully Created.  "
+				echo
+				echo "$swap	none	ext4	swap	defaults	0	0" >> /etc/fstab
+				sudo bash p_tool
 			
-		else
+			else
+				echo
+				echo "No Swap Will Be Added"
+				echo "WOuld you like to exit this script?  "
+				read -p "[Y] or [N]:   " leave
+				case $leave in
+					Y) echo "Exiting Script....   ";;
+					N) echo "Return To Main Menu.... ";;
+				esac
+				if [[ $leave == Y ]] || [[ $leave == y ]] ; then
+					exit 0
+					break
+				else	
+					sudo bash p_tool
+				fi
+			fi
+			break
+		   
+		elif [[ $REPLY == T ]] || [[ $REPLY == t ]] ; then
+			echo "Which Memory Stats Would You Like To View?  "
 			echo
-			echo "No Swap Will Be Added"
+			echo "[S]: Memory Slab  "
+			echo "[T]: Live Memory, CPU and IO Statistics  "
+			echo "[I]: Memory Information  "
+			echo "[A]: Available Memory  "
+			echo "[X]: Exit To Main Menu  "
 			echo
+			read -p "Please select a letter:  " sel
+			while true ; do
+				case $sel in
+					S) echo "Viewing Slabtop.  ";;
+					T) echo "Viewing htop or top.  ";;
+					I) echo "Viewing Meminfo.  ";;
+					A) echo "Viewing free and vmstat.  ";;
+					X) echo "Exiting.. ";;
+				esac
+				if [[ $sel == S ]] || [[ $sel == s ]] ; then
+					sudo slabtop
+				elif [[ $sel == T ]] || [[ $sel == t ]] ; then
+					sudo htop || sudo top
+				elif [[ $sel = I ]] || [[ $sel == i ]] ; then
+					sudo cat /proc/meminfo
+				elif [[ $sel == A ]] || [[ $sel == a ]] ; then
+					sudo free -h && sudo vmstat
+				else	
+					sudo bash p_tool
+				fi
+			done
 		fi
-
-		break
-
+	 
 #Add User And Password; Manage Permissions
 	elif [[ $action == a ]] ; then
 		while [[ 0 != 1 ]] ; do
@@ -228,7 +334,7 @@ declare -xf flag
 			read -p "Chosen Option:   " job
 			case $job in
 				1) echo "Add New System User:   ";;
-				2) echo "Edit Generic Permissions (rwx):   ";;
+				2) echo "Edit Generic Permissions -rwx:   ";;
 			esac
 			function add () {
 			sudo grep -e "^$user" /etc/passwd
@@ -259,6 +365,7 @@ declare -xf flag
 						else
 							echo "Failed To Add User.  "
 						fi
+						sudo bash p_tool
 					fi
 				break
 				done
@@ -274,7 +381,11 @@ declare -xf flag
 				echo "The Permission For This File/Directory currently looks likes:  "
 				path
 				echo
-				echo "Who's Permissions Would You Like To Edit Or Use A Preset Config?  "
+				echo "$(tput setaf 3)Change Individual Permissions$(tput sgr 0)" 
+				echo "$(tput setaf 5)Select A Common Permission Set$(tput sgr 0)  "
+				echo "Or" 
+				echo "$(tput setaf 1)Go Back To Main Menu$(tput sgr 0)  "
+				echo
 				echo
 				echo "$(tput setaf 3)[U]: User$(tput sgr 0)   "
 				echo "$(tput setaf 3)[G]: Group$(tput sgr 0)   "
@@ -282,7 +393,8 @@ declare -xf flag
 				echo "$(tput setaf 5)[700]: rwx------$(tput sgr 0)   "
 				echo "$(tput setaf 5)[600]: rw-------$(tput sgr 0)   "
 				echo "$(tput setaf 5)[644]: rw-r--r--$(tput sgr 0)   " 
-				echo
+				echo "$(tput setaf 1)[X]: Exit$(tput sgr 0)  "
+				echo 
 				while true ; do
 					read -p "Enter Option:  " perm
 					case $perm in
@@ -295,6 +407,7 @@ declare -xf flag
 						700) echo "Applying Changes...  ";;
 						600) echo "Applying Changes...  ";;
 						644) echo "Applying Changes...  ";;
+						X) echo "Exiting To Main Menu...   ";;
 					esac
 					if [[ $perm == U ]] || [[ $perm == u ]] ; then
 						echo
@@ -416,9 +529,11 @@ declare -xf flag
 					elif [[ $perm -eq 600 ]] ; then
 						sudo chmod 600 $f_path
 						getfacl $f_path
-					else 
+					elif [[ $perm -eq 644 ]] ; then
 						sudo chmod 644 $f_path
 						getfacl $f_path
+					else
+						bash p_tool
 					fi
 					break
 				done
