@@ -2,28 +2,30 @@
 
 #Script for practical automated usage 
 #Author: Junior Egbuna
-#Use at own risk. Although every effort has been made to ensure the sript is error free, there may be a few issues on certain systems and a recode may be needed to get the script working as expected.
+#Use at own risk. Although every effort has been made to ensure the sript is error free, 
+#there may be a few issues on certain systems and a recode may be needed to get the script working as expected.
 clear
 #This Script has been mainly tested on CentOS and RedHat Distributions.
 #Please send update suggestions to junior@ptools.co.uk or take part in the development at https://github.com/junior/p_tool-practical-tool
 
-echo -e "$(tput setaf 4)# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## #"
+echo -e "$(tput setaf 4)#$(tput sgr 0)$(tput setaf 6)#$(tput sgr 0)$(tput setaf 4)## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##$(tput sgr 0)$(tput setaf 6)#$(tput sgr 0)$(tput setaf 4)#"
 echo -e "$(tput setaf 4)#                     $(tput setaf 2)Practical Tool$(tput sgr 0)                       $(tput setaf 4)#"
 echo -e "$(tput setaf 4)#                         $(tput setaf 2)v1.01$(tput sgr 0)                            $(tput setaf 4)#"
 echo -e "$(tput setaf 4)#   $(tput setaf 2)https://github.com/Junior-ptool/p_tool-practical-tool  $(tput setaf 4)#"
-echo -e "$(tput setaf 4)# ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## #$(tput sgr 0)"
+echo -e "$(tput setaf 4)#$(tput sgr 0)$(tput setaf 6)#$(tput sgr 0)$(tput setaf 4)## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##$(tput sgr 0)$(tput setaf 6)#$(tput sgr 0)$(tput setaf 4)#$(tput sgr 0)"
 
 #Create directory for use by ptool
-function exist_mkdir () {
-sudo ls /etc/ptool
+exist_mkdir () {
+sudo ls /etc/ptool > /dev/null
 }
 echo
 echo
 echo
 if "exist_mkdir" ; then
-	echo "Directory already exist. Moving on with selection.."
+	echo "Ptool Working Directory already exist. Moving on...."
 else
 	sudo mkdir /etc/ptool
+	echo "Ptool Working Directory Created.  "
 fi
 echo
 echo
@@ -31,26 +33,17 @@ echo
 echo "What would you like to do with Practical Tool?"
 echo 
 echo 
-echo "Create User. Manage Permissions: [a]"
-echo
-echo "Basic Server Set-Up: [s] "
-echo
-echo "Partition And RAID Storage Devices: [p] "
-echo
-echo "Update Services And Packages:  [u] "
-echo
-echo "Configure swap, swappiness and max kernel max message:  [m]"
-echo
-echo "Exit:  [x]"
+echo 
 echo 
 echo "Please select a letter corresponding to your selection:   "
 echo 
-echo "$(tput setaf 3)[s] : Initial Server Set Up. Very Basic.$(tput sgr 0)  "
-echo "$(tput setaf 3)[p] : Partition or Fallocate Drives & Create RAID.$(tput sgr 0)  "
-echo "$(tput setaf 3)[a] : Add New User. Manage Permissions.$(tput sgr 0)  "
-echo "$(tput setaf 3)[u] : Update Server.$(tput sgr 0)  "
-echo "$(tput setaf 3)[m] : Create & Configure Swap, Swappiness & Kernel Message.$(tput sgr 0)  "
-echo "$(tput setaf 3)[x] : Exit This Script.$(tput sgr 0)  "
+echo "$(tput setaf 3)[S] : Initial Server Set Up. Very Basic.$(tput sgr 0)  "
+echo "$(tput setaf 3)[P] : Partition or Fallocate Drives & Create RAID.$(tput sgr 0)  "
+echo "$(tput setaf 3)[A] : Add New User. Manage Permissions.$(tput sgr 0)  "
+echo "$(tput setaf 3)[U] : Update Server.$(tput sgr 0)  "
+echo "$(tput setaf 3)[M] : Create & Configure Swap, Swappiness & Kernel Message.$(tput sgr 0)  "
+echo "$(tput setaf 3)[F] : Configure and Manage Firewall And Settings.$(tput sgr 0)"
+echo "$(tput setaf 3)[X] : Exit This Script.$(tput sgr 0)  "
 echo
 read -p "$(tput setaf 5)Enter Selection:$(tput sgr 0)   " action
 
@@ -62,11 +55,28 @@ while [[ true != false ]] ; do
 		s) echo "Initializing A Basic Initial Server Setup And Configuration";;
 		m) echo "Configuring Swap Parameters...";;
 		a) echo "Create New User/s & Update permissions..";;
-		x) echo "Now Exiting....."
+		f) echo "Configuring Firewall.. ";;
+		x) echo "Now Exiting.....";;
+		*) echo "Invalid Option!!"
 	esac
 
+
+#Pull Firewall Script For Configuration
+	if [[ $action == f ]] || [[ $action == F ]] ; then
+		cd /etc/ptool
+                fc () {
+                ls /etc/ptool/ptool-firewall > /dev/null
+                }
+                if fc ; then
+                        sudo bash ptool-firewall
+                else
+                        sudo wget https://raw.githubusercontent.com/Junior-ptool/p_tool-practical-tool/master/ptool-firewall
+                        sudo chmod 700 /etc/ptool/ptool-firewall
+                        sudo bash ptool-firewall
+                fi
+	fi
 #System Update
-	if [[ $action == u ]] ; then
+	if [[ $action == u ]] || [[ $action == U ]]; then
 		
 		echo "Which Distribution Is In use?   "
 		echo
@@ -106,8 +116,8 @@ while [[ true != false ]] ; do
 #Pull Partition scipt and run		
 	elif [[ $action == p ]] ; then
 		cd /etc/ptool
-		function sh () {
-		cat /etc/ptool/ptool-part
+		sh () {
+		ls /etc/ptool/ptool-part > /dev/null
 		}
 		if sh ; then
 			sudo bash ptool-part
@@ -119,14 +129,14 @@ while [[ true != false ]] ; do
 		
 
 #Set Up Servers		
-	elif [[ $action == s ]] ; then
+	elif [[ $action == s ]] || [[ $action == S ]]; then
 		echo "Would you like to generate a ssh keypair and scan your additional nodes to collect their keys?  "
 		read -p "[Y] or [N]:  " quest
 		if [[ $quest == Y ]] || [[ $quest == y ]] ; then
 			echo "Enter The Hostname Or IP.  "
 			read host
-			function ssh () {
-			ls ~/.ssh
+			ssh () {
+			ls ~/.ssh > /dev/null
 			}
 			if ssh ; then
 				echo ""
@@ -195,12 +205,13 @@ while [[ true != false ]] ; do
 		fi
 		break
 
-function flag () {
+flag () {
 swapon -s
 }
 declare -xf flag
 #Optimise Server with swappiness and overcommit
-	elif [[ $action == m ]] ; then
+	elif [[ $action == m ]] || [[ $action == M ]]; then
+		until [[ $REPLY == x ]] || [[ $REPLY == X ]] ; do
 		echo
 		echo "Welcome To The Memory Optimization Tool. "
 		echo
@@ -211,6 +222,8 @@ declare -xf flag
 		echo "[M]: Configure Memore Max Msg.  "
 		echo "[P]: Configure System Swap.  "
 		echo "[T]: View Slab or Live Memory Usage.  "
+		echo "[D]: Dmidecode.  "
+		echo "[X]: Exit.  "
 		echo 
 		read -p "Select Option:  "
 		echo
@@ -220,8 +233,74 @@ declare -xf flag
 			M) echo "Maxmsg Config.  ";;
 			P) echo "Configure Swap.  ";;
 			T) echo "View Memory Stats...  ";;
+			D) echo "View Bios, Memory, Processor, etc Information.  ";;
 		esac
-		if [[ $REPLY == S ]] || [[ $REPLY == s ]] ; then
+
+		if [[ $REPLY == D ]] || [[ $REPLY == d ]] ; then
+			until [[ $dmi == x ]] || [[ $dmi == X ]] ; do
+			echo "What Information Would You Like To View?  "
+			echo ""
+			echo "[B]: Bios"
+			echo "[M]: Memory"
+			echo "[P]: Processor"
+			echo "[S]: System"
+			echo "[D]: Chassis"
+			echo "[A]: Baseboard"
+			echo "[C]: Cache"
+			echo "[E]: Connector"
+			echo "[F]: Slot"
+			echo "[x]: Exit"
+			echo ""
+			read -p "Select Option:   " dmi
+			case $dmi in
+				A) echo "Viewing Baseboard Inofrmation.  ";;
+				B) echo "Viewing Bios Information.  ";;
+				C) echo "Viewing Cache Information.  ";;
+				D) echo "Viewing Chassis Information.  ";;
+				E) echo "Viewing Connector Information.  ";;
+				F) echo "Viewing Slot Information.  ";;
+				M) echo "Viewing Memory Information.  ";;
+				P) echo "Viewing Processor Information.  ";;
+				S) echo "Viewing System Information.  ";;
+				X) echo "Now Exiting.....  ";;
+			esac
+			if [[ $dmi == A ]] || [[ $dmi == a ]] ; then
+				sudo dmidecode --type baseboard
+			elif [[ $dmi == B ]] || [[ $dmi == b ]] ; then
+				sudo dmidecode --type bios
+			elif [[ $dmi == C ]] || [[ $dmi == c ]]; then
+				sudo dmidecode --type cache
+			elif [[ $dmi == D ]] || [[ $dmi == d ]] ; then 
+				sudo dmidecode --type chassis
+			elif [[ $dmi == E ]] || [[ $dmi == e ]] ; then
+				sudo dmidecode --type connector
+			elif [[ $dmi == F ]] || [[ $dmi == f ]] ; then
+				sudo dmidecode --type slot
+			elif [[ $dmi == M ]] || [[ $dmi == m ]] ; then
+				sudo dmidecode --type memory
+			elif [[ $dmi == P ]] || [[ $dmi == p ]] ; then
+				sudo dmidecode --type processor
+			elif [[ $dmi == S ]] || [[ $dmi == s ]] ; then
+				sudo dmidecode --type system
+			elif [[ $dmi == x ]] || [[ $dmi == X ]] ; then
+                                echo
+                                echo "Would you like to exit to the main menu?  "
+                                echo
+                                read -p "[Y] or [N]:  " mm
+                                case $mm in
+                                        Y) echo "Yes";;
+                                        N) echo "No";;
+                                esac
+                                if [[ $mm == Y ]] || [[ $mm == y ]] ; then
+                                        sudo bash p_tool
+                                else
+                                        exit 0	
+					break
+                                fi
+
+			fi
+			done
+		elif [[ $REPLY == S ]] || [[ $REPLY == s ]] ; then
 			echo "What swappiness would you like to apply (Max 100)?  "
 			read -p "Enter Figure:   " swap_level
 			sudo sysctl vm.swappiness=$swap_level
@@ -230,7 +309,6 @@ declare -xf flag
 		elif [[ $REPLY == O ]] || [[ $REPLY == o ]] ; then
 			echo "Would you like to overcommit memory?  "
 			read -p "[Y] or [N]:  " oc
-
 			if [[ $oc == Y ]] || [[ $oc == y ]] ; then
 				echo 1 > /proc/sys/vm/overcommit_memory
 			fi
@@ -245,7 +323,7 @@ declare -xf flag
 			echo
 			echo "Would you like to create swap?  "
 			read -p "[Y] [N]:  " fal_swap
-			function flag2 () {
+			flag2 () {
 			swapon $swap
 			}
 			declare -xf flag2
@@ -300,30 +378,39 @@ declare -xf flag
 			echo "[X]: Exit To Main Menu  "
 			echo
 			read -p "Please select a letter:  " sel
-			while true ; do
-				case $sel in
-					S) echo "Viewing Slabtop.  ";;
-					T) echo "Viewing htop or top.  ";;
-					I) echo "Viewing Meminfo.  ";;
-					A) echo "Viewing free and vmstat.  ";;
-					X) echo "Exiting.. ";;
-				esac
-				if [[ $sel == S ]] || [[ $sel == s ]] ; then
-					sudo slabtop
-				elif [[ $sel == T ]] || [[ $sel == t ]] ; then
-					sudo htop || sudo top
-				elif [[ $sel = I ]] || [[ $sel == i ]] ; then
-					sudo cat /proc/meminfo
-				elif [[ $sel == A ]] || [[ $sel == a ]] ; then
-					sudo free -h && sudo vmstat
-				else	
-					sudo bash p_tool
-				fi
-			done
+		
+			case $sel in
+				S) echo "Viewing Slabtop.  ";;
+				T) echo "Viewing htop or top.  ";;
+				I) echo "Viewing Meminfo.  ";;
+				A) echo "Viewing free and vmstat.  ";;
+				X) echo "Exiting.. ";;
+			esac
+			if [[ $sel == S ]] || [[ $sel == s ]] ; then
+				sudo slabtop
+			elif [[ $sel == T ]] || [[ $sel == t ]] ; then
+				sudo htop || sudo top
+			elif [[ $sel = I ]] || [[ $sel == i ]] ; then
+				sudo cat /proc/meminfo
+			elif [[ $sel == A ]] || [[ $sel == a ]] ; then
+				sudo free -h && sudo vmstat
+			else	
+				sudo bash p_tool
+			fi
+		elif [[ $REPLY == x ]] || [[ $REPLY == X ]] ; then
+			echo "Would you like to return to the main menu?  "
+			read -p "[Y] [N]:   " leave
+			if [[ $leave == Y ]] || [[ $leave == y ]] ; then
+				sudo bash p_tool
+			else
+				exit 0
+				break
+			fi
+			
 		fi
-	 
+	 	done
 #Add User And Password; Manage Permissions
-	elif [[ $action == a ]] ; then
+	elif [[ $action == a ]] || [[ $action == A ]]; then
 		while [[ 0 != 1 ]] ; do
 			echo
 			echo "What would you like to do with this tool?  "
@@ -336,7 +423,7 @@ declare -xf flag
 				1) echo "Add New System User:   ";;
 				2) echo "Edit Generic Permissions -rwx:   ";;
 			esac
-			function add () {
+			add () {
 			sudo grep -e "^$user" /etc/passwd
 			}
 			if [[ $job == 1 ]] ; then
@@ -348,7 +435,7 @@ declare -xf flag
 					"add" > /dev/null
 
 					#Check if user exist
-					if add ; then
+					if "add" ; then
 						echo "Username $user Already Exists! Please try again.  "
 					else
 
@@ -373,9 +460,9 @@ declare -xf flag
 				echo
 				echo "What is the absolute path of the file you would like to edit the permission for?  "
 				echo
-				read -p "path/to/file:  " f_path
+				read -p "/path/to/file:  " f_path
 				echo
-				function path () {
+				path () {
 				sudo getfacl "$f_path"
 				}
 				echo "The Permission For This File/Directory currently looks likes:  "
@@ -543,9 +630,9 @@ declare -xf flag
 		break			
 
 #Exit Script
-	elif [[ $action == x ]] ; then
-		exit 1
-		
+	elif [[ $action == x ]] || [[ $action == X ]] ; then
+		exit 0
+		break
 	fi
 	break
 done 
