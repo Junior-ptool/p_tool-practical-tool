@@ -1,0 +1,462 @@
+#!/bin/bash
+
+#Firewall tool for use in conjunction with the master ptool
+#Easily set up and alter firewall configurations.
+clear
+#Author: Junior Egbuna
+
+echo
+echo "Welcome To The Firewall Wall Tool."
+echo "Part Of The Practical Tool Suit Of Tools."
+echo
+echo "What Would You Like For This Tool To Aid With?  "
+echo
+echo
+echo "1:  IPTABLES Service Options. "
+echo "2:  Configure IPTABLES.  "
+echo "3:  Exit To Main Menu. "
+echo 
+read -p "Select Option:   " sel
+echo
+case $sel in
+	1) echo "Check Status, Start, Stop, etc...";;
+	2) echo "Configuring Iptables...";;
+	3) echo "Exiting...";;
+	*) echo "Invalid Option."
+esac
+if [[ $sel -eq 3 ]] ; then
+	sudo bash p_tool
+fi
+if [[ $sel -eq 1 ]] ; then
+	until [[ $iptable -eq 9 ]] ; do
+	echo
+	echo "1. View Iptables Status."
+	echo "2. Stop Iptables."
+	echo "3. Start Iptables."
+	echo "4. Restart Iptables."
+	echo "5. Save Iptables. "
+	echo "6. Flush Iptables. "
+	echo "7. Delete Individual Rule.  "
+	echo "8. List Iptables"
+	echo "9. Exit To Main Menu. "
+	echo
+	read -p "Selection:  " iptable
+	case $iptable in
+		1) echo "Iptables Status.";;
+		2) echo "Stopping Iptables...";;
+		3) echo "Starting Iptables...";;
+		4) echo "Restarting Iptables...";;
+		5) echo "Saving Iptables...";;
+		6) echo "Flush Iptables? ";;
+		7) echo "Delete Rules.";;
+		8) echo "Listing...";;
+		9) echo "Exiting....  ";;
+		*) echo "Invalid Selection!! "
+	esac
+	if [[ $iptable -eq 7 ]] ; then
+		sudo iptables -L --line-number
+		echo
+		read -p "Please select the number you wish to delete:  " del_ip
+		sudo iptables -D INPUT $del_ip
+	fi
+	if [[ $iptable -eq 1 ]] ; then
+		sudo systemctl status iptables || sudo /etc/init.d/iptables status
+	elif [[ $iptable -eq 2 ]] ; then
+		sudo systemctl stop iptables || sudo /etc/init.d/iptables stop
+	elif [[ $iptable -eq 3 ]] ; then
+                sudo systemctl start iptables || sudo /etc/init.d/iptables start
+	elif [[ $iptable -eq 4 ]] ; then
+                sudo systemctl restart iptables || sudo /etc/init.d/iptables restart
+	elif [[ $iptable -eq 5 ]] ; then
+                sudo iptables-save || sudo /etc/init.d/iptables save
+	elif [[ $iptable -eq 6 ]] ; then
+		echo "This will flush your entire iptable configuration and disable iptables. "
+		echo "Are you sure you wish to proceed? You can also opt to delete a single entry. "
+		echo
+		read -p "[Yes][No][Del]:  " flush
+		case $flush in
+			Yes) echo "Flushing....  ";;
+			yes) echo "Flushing....  ";;
+			Y) echo "Flushing....  ";;
+			y) echo "Flushing....  ";;
+			No) echo "Returning To Menu.";;
+			no) echo "Returning To Menu.";;
+			N) echo "Returning To Menu.";;
+			n) echo "Returning To Menu.";;
+			DEL) echo "Redirecting To Delete Iptable Entry...";;
+			Del) echo "Redirecting To Delete Iptable Entry...";;
+			D) echo "Redirecting To Delete Iptable Entry...";;
+			d) echo "Redirecting To Delete Iptable Entry...";;
+			*) echo "Invalid!!!!"
+		esac
+		if [[ $flush == No ]] || [[ $flush == no ]] ; then
+			return 0
+		elif [[ $flush == Yes ]] || [[ $flush == yes ]] ; then
+			sudo iptables -F
+			sudo iptables-save 
+			echo "All Firewall Rules Have Now Been Flushed and the firewall is now disabled.  "
+		elif [[ $flush == DEL ]] || [[ $flush == Del ]] ; then
+			sudo iptables -L --line-number
+                	echo
+                	read -p "Please select the number you wish to delete:  " del_ip
+                	sudo iptables -D INPUT $del_ip
+			sudo iptables-save
+		fi
+	elif [[ $iptable -eq 8 ]] ; then
+		sudo iptables -L -v
+	elif [[ $iptable -eq 9 ]] ; then
+		bash ptool-firewall
+		break
+		
+	fi
+	done
+elif [[ $sel -eq 2 ]] ; then
+	echo
+	echo "What would you like to configure? "
+	echo
+	echo "1: INPUT."
+	echo "2: OUTPUT"
+	echo "3: FORWARDING"
+	echo "4: MASQUERADING"
+	echo
+	read -p "Selection:  " chain
+	case $chain in
+		1) echo "Configuring Iptables Input Chain. ";;
+		2) echo "configuring Iptables Output Chain. ";;
+		3) echo "Configuring Iptables Forward Chain. ";;
+		4) echo "Configure NAT/Masquerade Chain. ";;
+		*) echo "Invalid Option."
+	esac
+
+	if [[ $chain -eq 1 ]] ; then 
+		read -p "[TCP] or [UDP]:  " tcp_udp
+		case $tcp_udp in
+			TCP) proto=tcp ;;
+			tcp) proto=tcp ;;
+			UDP) proto=udp ;;
+			udp) proto=udp ;;
+			*) echo "Invalid Option"
+		esac
+		read -p "[DROP],[ACCEPT] or [RETURN]:  " allow
+		case $allow in
+			DROP) append=DROP ;;
+			drop) append=DROP ;;
+			ACCEPT) append=ACCEPT ;;
+			accept) append=ACCEPT ;;
+			RETURN) append=RETURN ;;
+			return) append=RETURN ;;
+			*) echo "Invalid Option"
+		esac
+		echo
+		echo "Select a source IP if applicable. "
+		echo
+		echo "[S]: Source IP "
+		echo "[R]: IP Range "
+		echo "[N]: None "
+		read -p "Selection:  " src
+		case $src in
+			S) read -p "Enter Source IP: " ip ;;
+			s) read -p "Enter Source IP: " ip ;;
+			R) read -p "Enter IP Range:  " ip ;;
+			r) read -p "Enter IP Range:  " ip ;;
+			N) echo "Not applicable." ;;
+			n) echo "Not applicable." ;;
+			*) echo "Invalid Option."
+		esac
+		if [[ $src == S ]] || [[ $src == s ]] ; then
+			read -p "Enter the submask:  " sub
+		fi
+		read -p "Enter Port Number:   " port
+		echo "Allow Traffic On Localhost?  " 
+		echo
+		read -p "[Y][N]:   " lo
+		if [[ $lo == Y ]] || [[ $lo == y ]] ; then
+			lo () {
+			sudo iptables -A INPUT -i lo -j ACCEPT
+			}
+			lo
+			sudo iptables-save
+		else
+			lo () {
+                        sudo iptables -A INPUT -i lo -j DROP
+                        }
+                        lo
+			sudo iptables-save
+		fi
+		echo "Building The Rule..."
+		if [[ $src == N ]] || [[ $src == n ]] ; then
+			echo "iptables -A INPUT -p $tcp_udp --dport $port -j $append"
+			rule () {
+                        sudo iptables -A INPUT -p $tcp_udp --dport $port -j $append
+                        }
+			declare -xf rule
+		elif [[ $src == S ]] || [[ $src == s ]] ; then
+			echo "iptables -A INPUT -s $ip -j $append"
+			rule () {
+                        sudo iptables -A INPUT -s $ip -j $append
+			}
+			declare -xf rule
+		elif [[ $src == R ]] || [[ $src == r ]] ; then
+			echo "iptables -A INPUT -m iprange --src-range $ip -j $append"
+			rule () {
+			sudo iptables -A INPUT -m iprange --src-range $ip -j $append
+			}
+			declare -xf rule
+		fi
+		echo
+		echo "Would you like to apply and save this rule? "
+		echo
+		read -p "[Y][N]:   " apply
+		if [[ $apply == Y ]] || [[ $apply = y ]] ; then
+			rule
+			iptables-save
+			unset rule
+			echo "Would you like to drop all other traffic? "
+			echo
+			read -p "[Y][N]:   " drop
+			if [[ $drop == Y ]] || [[ $drop == y ]] ; then
+				drop () {
+				sudo iptables -A INPUT -j DROP
+				}
+				drop
+			fi
+			bash ptool-firewall
+		else
+			echo "Would you like to return to the main menu or Exit? "
+			read -p "[Y][X]:  "
+			if [[ $REPLY == Y ]] || [[ $REPLY == y ]] ; then
+				sudo bash p_tool
+			else
+				exit 0
+			fi
+		fi
+	elif [[ $chain -eq 2 ]] ; then
+                read -p "[TCP] or [UDP]:  " tcp_udp
+                case $tcp_udp in
+                        TCP) proto=tcp ;;
+			tcp) proto=tcp ;;
+                        UDP) proto=udp ;;
+			udp) proto=udp ;;
+                        *) echo "Invalid Option"
+                esac
+                read -p "[DROP],[ACCEPT] or [RETURN]:  " allow
+                case $allow in
+                        DROP) append=DROP ;;
+			drop) append=DROP ;;
+                        ACCEPT) append=ACCEPT ;;
+			accept) append=ACCEPT ;;
+                        RETURN) append=RETURN ;;
+			return) append=RETURN ;;
+                        *) echo "Invalid Option"
+                esac
+                echo
+                echo "Select a source IP if applicable. "
+                echo
+                echo "[S]: Source IP "
+                echo "[R]: IP Range "
+                echo "[N]: None "
+                read -p "Selection:  " src
+                case $src in
+                        S) read -p "Enter Source IP: " ip ;;
+			s) read -p "Enter Source IP: " ip ;;
+                        R) read -p "Enter IP Range:  " ip ;;
+			r) read -p "Enter IP Range:  " ip ;;
+                        N) echo "Not applicable." ;;
+			n) echo "Not applicable." ;;
+                        *) echo "Invalid Option."
+                esac
+                if [[ $src == S ]] || [[ $src == s ]] ; then
+                        read -p "Enter the submask:  " sub
+                fi
+                read -p "Enter Port Number:   " port
+
+                echo "Building The Rule..."
+                if [[ $src == N ]] || [[ $src == n ]] ; then
+                        echo "iptables -A OUTPUT -p $tcp_udp --dport $port -j $append"
+                        rule () {
+			sudo iptables -A OUTPUT -p $tcp_udp --dport $port -j $append
+			}
+			declare -xf rule
+                elif [[ $src == S ]] || [[ $src == s ]] ; then
+                        echo "iptables -A OUTPUT -s $ip -j $append"
+                        rule () {
+			sudo iptables -A OUTPUT -s $ip$sub -j $append
+			}
+			declare -xf rule
+                elif [[ $src == R ]] || [[ $src == r ]] ; then
+                        echo "iptables -A OUTPUT -m iprange --src-range $ip -j $append"
+                        rule () {
+			sudo iptables -A OUTPUT -m iprange --src-range $ip -j $append
+			}
+			declare -xf rule
+                fi
+                echo
+                echo "Would you like to apply and save this rule? "
+                echo
+                read -p "[Y][N]:   " apply
+                if [[ $apply == Y ]] || [[ $apply = y ]] ; then
+                        rule
+                        iptables-save
+			unset rule
+                else
+                        echo "Would you like to return to the main menu or Exit? "
+                        read -p "[Y][X]:  "
+                        if [[ $REPLY == Y ]] || [[ $REPLY == y ]] ; then
+                                sudo bash p_tool
+                        else
+                                exit 0
+                        fi
+                fi
+	elif [[ $chain -eq 3 ]] ; then
+                read -p "[TCP] or [UDP]:  " tcp_udp
+                case $tcp_udp in
+                        TCP) proto=tcp ;;
+			tcp) proto=tcp ;;
+                        UDP) proto=udp ;;
+			udp) proto=udp ;;
+                        *) echo "Invalid Option"
+                esac
+                read -p "[DROP],[ACCEPT] or [RETURN]:  " allow
+                case $allow in
+                        DROP) append=DROP ;;
+			drop) append=DROP ;;
+                        ACCEPT) append=ACCEPT ;;
+			accept) append=ACCEPT ;;
+                        RETURN) append=RETURN ;;
+			return) append=RETURN ;;
+                        *) echo "Invalid Option"
+                esac
+                echo
+                echo "Select a source IP if applicable. "
+                echo
+                echo "[S]: Source IP "
+                echo "[R]: IP Range "
+                echo "[N]: None "
+                read -p "Selection:  " src
+                case $src in
+                        S) read -p "Enter Source IP: " ip ;;
+			s) read -p "Enter Source IP: " ip ;;
+                        R) read -p "Enter IP Range:  " ip ;;
+			r) read -p "Enter IP Range:  " ip ;;
+                        N) echo "Not applicable." ;;
+			n) echo "Not applicable." ;;
+                        *) echo "Invalid Option."
+                esac
+                if [[ $src == S ]] || [[ $src == s ]] ; then
+                        read -p "Enter the submask:  " sub
+                fi
+                read -p "Enter Port Number:   " port
+
+                echo "Building The Rule..."
+                if [[ $src == N ]] || [[ $src == n ]] ; then
+                        echo "iptables -A FORWARD -p $tcp_udp --dport $port -j $append"
+                        rule () {
+			sudo iptables -A FORWARD -p $tcp_udp --dport $port -j $append
+			}
+			declare -xf rule
+                elif [[ $src == S ]] || [[ $src == s ]] ; then
+                        echo "iptables -A FORWARD -s $ip -j $append"
+                        rule () {
+			sudo iptables -A FORWARD -s $ip$sub -j $append
+			}
+			declare -xf rule
+                elif [[ $src == R ]] || [[ $src == r ]] ; then
+                        echo "iptables -A FORWARD -m iprange --src-range $ip -j $append"
+                        rule () {
+			sudo iptables -A FORWARD -m iprange --src-range $ip -j $append
+			}
+			declare -xf rule
+                fi
+                echo
+                echo "Would you like to apply and save this rule? "
+                echo
+                read -p "[Y][N]:   " apply
+                if [[ $apply == Y ]] || [[ $apply = y ]] ; then
+                        rule
+                        iptables-save
+			unset rule
+                else
+                        echo "Would you like to return to the main menu or Exit? "
+                        read -p "[Y][X]:  "
+                        if [[ $REPLY == Y ]] || [[ $REPLY == y ]] ; then
+                                sudo bash p_tool
+                        else
+                                exit 0
+                        fi
+                fi
+	elif [[ $chain -eq 4 ]] ; then
+                read -p "[TCP] or [UDP]:  " tcp_udp
+                case $tcp_udp in
+                        TCP) proto=tcp ;;
+			tcp) protp=tcp ;;
+                        UDP) proto=udp ;;
+			udp) proto=udp ;;
+                        *) echo "Invalid Option"
+                esac
+                read -p "[MASQUERADE] or [FORWARD]:  " allow
+                case $allow in
+                        MASQUERADE) append=MASQUERADE ;;
+			masquerade) append=MASQUERADE ;;
+                        forward) append=ACCEPT ;;
+			FORWARD) append=ACCEPT ;;
+                        *) echo "Invalid Option"
+                esac
+                echo
+                echo "Select a Destination IP/Range. "
+                echo
+                echo "[S]: Single Destination IP "
+                echo "[R]: Destination IP Range "
+                read -p "Selection:  " src
+                case $src in
+                        S) read -p "Enter Destination IP: " ip ;;
+			s)read -p "Enter Destination IP: " ip ;;
+                        R) read -p "Enter IP Range:  " ip ;;
+			r) read -p "Enter IP Range:  " ip ;;
+                        *) echo "Invalid Option."
+                esac
+		read -p "Enter The Destination Port Number " dport
+                
+                read -p "Enter Source Port Number:   " port
+		read -p "Enter Your Network Card Name e.g eth0" nic
+		echo "TIP - Use command >ip a s< or >ip address show< to find the name of your netword card"
+# Build Firewall Configuration
+                echo "Building The Rule..."
+                if [[ $src == S ]] || [[ $src == s ]] ; then
+                        echo "iptables -t nat -A  PREROUTING -p $tcp_udp --dport $port -j DNAT --to-destination $ip:$dport"
+                        rule () {
+			sudo iptables -t nat -A  PREROUTING -p $tcp_udp --dport $port -j DNAT --to-destination $ip:$dport
+			}
+			declare -xf rule
+                elif [[ $src == R ]] || [[ $src == r ]] ; then
+                echo "iptables -t nat -A  PREROUTING -p $tcp_udp --dport $port -j DNAT --to-destination $ip:$dport"
+                        rule () {
+                        sudo iptables -t nat -A  PREROUTING -p $tcp_udp --dport $port -j DNAT --to-destination $ip:$dport
+			}
+			declare -xf rule
+		fi
+                echo
+                echo "Would you like to apply and save this rule? "
+                echo
+                read -p "[Y][N]:   " apply
+                if [[ $apply == Y ]] || [[ $apply = y ]] ; then
+			sudo modprobe ip_tables
+			sudo modprobe ip_conntrack
+			sudo modprobe ip_conntrack_irc
+			sudo modprobe ip_conntrack_irc_ftp
+			sudo iptables -t nat -A POSTROUTING -j $append
+			sudo iptables -t nat -A POSTROUTING -o $nic -j $append
+			sudo echo "1" > /proc/sys/net/ipv4/ip_forward
+                        rule
+                        iptables-save
+			unset rule
+                else
+                        echo "Would you like to return to the main menu or Exit? "
+                        read -p "[Y][X]:  "
+                        if [[ $REPLY == Y ]] || [[ $REPLY == y ]] ; then
+                                sudo bash p_tool
+                        else
+                                exit 0
+                        fi
+                fi
+	fi
+fi	
